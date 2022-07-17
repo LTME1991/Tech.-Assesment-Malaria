@@ -1,0 +1,199 @@
+---
+title: "Technical Assesment (Data Analyst)"
+output: html_document
+date: "2022-07-12"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Dataset Used: <https://github.com/rfordatascience/tidytuesday/tree/master/data/2018/2018-11-13>
+
+```{r Import}
+#import libraries
+#install dplyr
+library(dplyr)
+#install ggplot2
+library(ggplot2)
+```
+-----------------------------------------------------------------------------------
+
+## Malaria_inc dataset analysis
+Objective of this analysis:
+
+1. Which 10 countries have the highest incidence of malaria?
+
+2. Is there any improvement over the years?
+
+```{r Reading malaria_incidence dataset}
+#reading malaria_incidence dataset, remember to change filepath
+setwd("C:/Users/leont/Desktop/Malaria")
+malaria_inc <-read.csv("malaria_inc.csv")
+names(malaria_inc)
+str(malaria_inc)
+```
+Observation: 
+
+1) The dataset only contains data from the years 2000, 2005, 2010 and 2015. Data from these 4 years will be analysed for consistency
+
+2) The first and last column is confusing. They will be renamed to "country" and "cases".
+
+```{r Rename malaria_inc dataset}
+#rename first column to country and last column to cases_rate
+malaria_inc<-malaria_inc %>% setNames(c("country", "code", "year", "cases_rate"))
+options(scipen=999)
+malaria_inc
+```
+
+```{r Countries with the highest incidence of malaria in descending order}
+#find out the countries that have the highest number of cases
+worst_malaria_inc <- malaria_inc %>%
+  group_by(country) %>%
+  summarise(cases_rate = sum(cases_rate)) %>%
+  arrange(desc(cases_rate))%>%
+  head(10)
+worst_malaria_inc
+```
+Observation: 
+
+The 10 countries with the highest cases for the span of 15 years in descending order are Burkina Faso,Turkey, Cote d'Ivoire, Togo, Mali, Nigeria, Niger, Sierra Leone, Democratic Republic of Congo, and Guinea.
+
+```{r Filter and plot for countries with highest cases}
+#filtered dataset based on the the top 10 countries with the highest cases
+worst_malaria_inc_year<-malaria_inc %>%
+  group_by(year,country) %>%
+  summarise(cases = sum(cases_rate)) %>%
+  arrange(country,year) %>%
+  filter(country %in% worst_inc$country)
+worst_malaria_inc_year
+#plot to check whether there are any improvements over the years-decrease in cases
+ggplot(data=worst_malaria_inc_year,aes(x=year,y=cases,color = country))+geom_line()
+```
+
+Observation: 
+
+Turkey has the most significant improvement with a drastic drop of cases from 2000 to 2005
+
+-----------------------------------------------------------------------------------
+
+## Malaria_death dataset analysis
+
+Objective of this analysis::
+
+1. Which 10 countries have the highest malaria deaths? Is this related to the countries with the highest number of cases?
+
+2. Is there any improvement over the years?
+
+```{r Reading malaria_deaths dataset}
+#reading malaria_deaths dataset
+malaria_deaths <-read.csv("malaria_deaths.csv")
+names(malaria_deaths)
+str(malaria_deaths)
+```
+
+Observations:
+
+2) The first and last column is confusing. They will be renamed to "country" and "death_rate".
+
+```{r Rename malaria_deaths dataset}
+#rename first column to country and last column to deaths
+malaria_deaths<-malaria_deaths %>% setNames(c("country", "code", "year", "deaths_rate"))
+malaria_deaths
+```
+
+```{r Filter dataset only containing the selective years}
+#filter dataset to only contain data from 2000,2005,2010,and 2015 to ensure consistent analysis
+malaria_deaths_year <- malaria_deaths %>%
+  filter(year==2000|year == 2005|year==2010|year==2015)
+malaria_deaths_year
+```
+
+```{r Countries with the worst death rate}
+#find out which countries have the worst death rates
+worst_countries <- malaria_deaths_year %>%
+  group_by(country) %>%
+  summarise(deaths = sum(deaths_rate)) %>%
+  arrange(desc(deaths))%>%
+  head(10)
+worst_countries
+```
+
+Observations: 
+
+There is a very high correlation between the number of cases and the number of deaths.
+
+
+```{r Filter and plot for countries with highest death rates}
+#filtered dataset based on the the top 10 countries with the highest deaths rate
+worst_countries_year<-malaria_deaths_year %>%
+  group_by(year,country) %>%
+  summarise(deaths = sum(deaths_rate)) %>%
+  arrange(country,year) %>%
+  filter(country %in% worst_countries$country)
+worst_countries_year
+#line chart to check whether there is a decrease in death rates over the years
+ggplot(data=worst_countries_year,aes(x=year,y=deaths,color = country))+geom_line() +facet_wrap(~country)
+```
+
+Observation: 
+
+Among all the countries with the most deaths, all except Mali had shown a significant decrease.
+
+-----------------------------------------------------------------------------------
+## Malaria_death_age dataset analysis
+Objective of this analysis:
+
+1. Which age group have a higher percentage of deaths?
+
+
+```{r Reading malaria_deaths_age dataset}
+#reading malaria_deaths_age dataset
+malaria_deaths_age <-read.csv("malaria_deaths_age.csv")
+names(malaria_deaths_age)
+str(malaria_deaths_age)
+malaria_deaths_age
+```
+
+Observations:
+
+1) The first and second column is confusing. They will be renamed to "index" and "country".
+
+```{r Rename malaria_deaths_age columns}
+#rename the columns
+malaria_deaths_age<-malaria_deaths_age %>% setNames(c("index","country", "code", "year","age_group", "deaths"))
+malaria_deaths_age
+```
+
+```{r Filter dataset to only contains selective years}
+#filter dataset to only contain data from 2000,2005,2010,and 2015 to ensure consistent analysis
+malaria_deaths_age_filtered_year<-malaria_deaths_age %>%
+  filter(year==2000|year == 2005|year==2010|year==2015)
+malaria_deaths_age
+```
+
+```{r Filter based on countries with the highest death rates}
+#filter based on the 10 countries with the highest death rates, according to the second analysis
+worst_countries_year_age<-malaria_deaths_age_filtered_year %>%
+  filter(country %in% worst_countries$country)
+worst_countries_year_age
+```
+
+```{r Most vulnerable age group}
+#stacked bar graph to find out the most vulerable age group
+ggplot(worst_countries_year_age, aes(fill=age_group, y=deaths, x=year)) + 
+    geom_bar(position="fill", stat="identity")+ facet_wrap(~country)
+```
+
+Observations:
+
+Children under 5 is the most vulnerable age group.
+
+
+Summary
+
+1) People from poorly-developed countries has a higher chance to suffer from Malaria compared to those people from more developed countries. 
+
+2) The most vulnerable age group is children under 5.
+
+3) An improvement to the death rates is observed over a 15 year period from 2000 to 2015.
